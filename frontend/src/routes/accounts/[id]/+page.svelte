@@ -9,6 +9,12 @@
 
     $: accountId = $page.params.id as string;
     $: account = $accounts.find((a) => a.id === accountId);
+
+$: if (account) {
+    frequency = account.goalFrequency ?? frequency;
+    editingGoal = !(account.goalAmount && account.goalDate);
+}
+
     $: accountTransactions = $transactions
         .filter((t) => t.accountId === accountId || t.fromAccountId === accountId || t.toAccountId === accountId)
         .sort((a, b) => b.date.localeCompare(a.date));
@@ -24,11 +30,30 @@
     let frequency: 'daily' | 'weekly' | 'monthly' = 'monthly';
     let editingGoal = true;
 
-    $: accountId = $page.params.id as string;
-    $: account = $accounts.find((a) => a.id === accountId);
-    $: if (account) {
-        frequency = account.goalFrequency ?? frequency;
-        editingGoal = !(account.goalAmount && account.goalDate);
+    function perPeriodCalc(a) {
+        if(!a.goalAmount||!a.goalDate) return 0;
+        const now=new Date();
+        const end=new Date(a.goalDate);
+        const days=Math.max(0,(end.getTime()-now.getTime())/86400000);
+        const remaining=Math.max(0,a.goalAmount-a.balance);
+        if(a.goalFrequency==='daily') return remaining/Math.ceil(days||1);
+        if(a.goalFrequency==='weekly') return remaining/Math.ceil(days/7||1);
+        return remaining/Math.ceil(days/30||1);
+    }
+
+    function catchUpLineAcc(a){
+        if(!a.goalFrequency) return '';
+        if(!a.lastTxDate) return 'On Track!';
+        const last=new Date(a.lastTxDate);
+        const now=new Date();
+        let missed=0;
+        if(a.goalFrequency==='daily') missed=Math.floor((now.getTime()-last.getTime())/86400000)-1;
+        else if(a.goalFrequency==='weekly') missed=Math.floor((now.getTime()-last.getTime())/(86400000*7))-1;
+        else missed=((now.getFullYear()-last.getFullYear())*12+(now.getMonth()-last.getMonth()))-1;
+        if(missed<=0) return 'On Track!';
+        const per=perPeriodCalc(a);
+        const amt=per*missed;
+        return `Catch-up: ${amt.toLocaleString(undefined,{style:'currency',currency:'USD'})} needed to get back on track`;
     }
 
     $: currentBalance = account ? account.balance : 0;
@@ -105,8 +130,8 @@
                         <button class="btn-primary" on:click={saveGoal} type="button">Save</button>
                     </div>
                 {:else}
-                    {#if account.goalAmount && account.goalDate && account.goalFrequency}
-                        <div class="mt-4 flex items-center justify-between">
+                    <div class="mt-4 space-y-2">
+                        <div class="flex items-center justify-between">
                             <p class="text-slate-700 text-sm">Need <span class="font-semibold brand-text">{formatCurrency(perPeriod ?? 0)}</span> per {account.goalFrequency} to save ({formatCurrency(account.goalAmount)}) by {new Date(account.goalDate).toLocaleDateString()}</p>
                             <button class="text-slate-400 hover:text-slate-600" on:click={() => {
                                 editingGoal = true;
@@ -115,7 +140,12 @@
                                 frequency = account.goalFrequency ?? 'monthly';
                             }}>Edit</button>
                         </div>
-                    {/if}
+                        {#if catchUpLineAcc(account) === 'On Track!'}
+                            <p class="text-green-700 text-sm">On Track!</p>
+                        {:else if catchUpLineAcc(account)}
+                            <p class="text-orange-600 text-sm">{catchUpLineAcc(account)}</p>
+                        {/if}
+                    </div>
                 {/if}
             {/if}
         </div>

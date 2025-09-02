@@ -19,6 +19,35 @@
         return `${per.toLocaleString(undefined,{style:'currency',currency:'USD'})}/${a.goalFrequency} to save (${a.goalAmount.toLocaleString(undefined,{style:'currency',currency:'USD'})}) by ${end.toLocaleDateString()}`;
     }
 
+    function catchUpLine(a) {
+        if(!a.goalFrequency) return '';
+        if(!a.lastTxDate) return 'On Track!';
+        const last=new Date(a.lastTxDate);
+        const now=new Date();
+        let missed=0;
+        if(a.goalFrequency==='daily') {
+            missed=Math.floor((now.getTime()-last.getTime())/86400000)-1;
+        } else if(a.goalFrequency==='weekly') {
+            missed=Math.floor((now.getTime()-last.getTime())/(86400000*7))-1;
+        } else {
+            missed=((now.getFullYear()-last.getFullYear())*12+(now.getMonth()-last.getMonth()))-1;
+        }
+        if(missed<=0) return 'On Track!';
+        const per=parseFloat(goalLinePer(a));
+        const amt=per*missed;
+        return `Catch-up: ${amt.toLocaleString(undefined,{style:'currency',currency:'USD'})} needed to get back on track`;
+    }
+
+    function goalLinePer(a){
+        const now=new Date();
+        const end=new Date(a.goalDate);
+        const days=Math.max(0,(end.getTime()-now.getTime())/86400000);
+        const remaining=Math.max(0,a.goalAmount-a.balance);
+        if(a.goalFrequency==='daily') return remaining/Math.ceil(days||1);
+        if(a.goalFrequency==='weekly') return remaining/Math.ceil(days/7||1);
+        return remaining/Math.ceil(days/30||1);
+    }
+
     // Recent transactions are rendered inline in the template
 
     // quick transaction form state
@@ -96,6 +125,11 @@
                                     <p class="text-xs text-slate-400 mt-0.5">Last txn: {a.lastTxDate ? new Date(a.lastTxDate).toLocaleDateString() : '—'}</p>
                                     {#if a.goalAmount && a.goalDate && a.goalFrequency}
                                         <p class="text-xs text-slate-500 mt-0.5">{goalLine(a)}</p>
+                                        {#if catchUpLine(a) === 'On Track!'}
+                                            <p class="text-xs text-green-700">On Track!</p>
+                                        {:else if catchUpLine(a)}
+                                            <p class="text-xs text-orange-600">{catchUpLine(a)}</p>
+                                        {/if}
                                     {/if}
                                 </div>
                             </a>

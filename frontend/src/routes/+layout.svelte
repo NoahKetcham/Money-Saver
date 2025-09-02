@@ -12,15 +12,19 @@
 
 	let { children } = $props();
 
+	let unsub: (() => void) | null = null;
 	onMount(async () => {
 		await fetchCurrentUser();
-		const unsub = auth.subscribe((v) => {
+		unsub = auth.subscribe((v) => {
 			if (v.token) {
 				loadAccounts();
 				loadTransactions();
 			}
 		});
-		onDestroy(unsub);
+	});
+
+	onDestroy(() => {
+		if (unsub) unsub();
 	});
 
 	$effect(() => {
