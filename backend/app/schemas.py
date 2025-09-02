@@ -5,9 +5,9 @@ from datetime import datetime, date
 
 class AccountBase(BaseModel):
     name: str
-    type: Literal['Checking','Savings','Credit Card','Cash','Investment','Other']
+    type: str
     balance: float
-    stash_type: Literal['Cash','Bank','Crypto Wallet','Investment'] = 'Bank'
+    stash_type: str = 'Bank'
     goal_amount: Optional[float] = None
     goal_date: Optional[date] = None
     goal_frequency: Optional[Literal['daily','weekly','monthly']] = None

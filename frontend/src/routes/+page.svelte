@@ -58,8 +58,10 @@
 
     // add account form state
     let accName = '';
-    let accType: 'Checking' | 'Savings' | 'Credit Card' | 'Cash' | 'Investment' | 'Other' = 'Checking';
-    let accStash: 'Cash' | 'Bank' | 'Crypto Wallet' | 'Investment' = 'Bank';
+    let accType: string = '';
+    let accStash: string = '';
+    let customType = '';
+    let customStash = '';
     let accBalanceStr = '';
     let showModal = false;
 
@@ -88,13 +90,17 @@
 
     function submitAddAccount() {
         const balance = parseFloat(accBalanceStr);
-        if (!accName.trim() || Number.isNaN(balance)) return;
+        let finalType = accType === 'Custom' ? customType.trim() : accType;
+        let finalStash = accStash === 'Custom' ? customStash.trim() : accStash;
+        if (!accName.trim() || Number.isNaN(balance) || !finalType || !finalStash) return;
         const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
-        createAccountStore({ id, name: accName.trim(), type: accType, balance, stashType: accStash });
+        createAccountStore({ id, name: accName.trim(), type: finalType, balance, stashType: finalStash });
         accName = '';
         accBalanceStr = '';
-        accType = 'Checking';
-        accStash = 'Bank';
+        accType = '';
+        accStash = '';
+        customType = '';
+        customStash = '';
         showModal = false;
     }
 </script>
@@ -156,20 +162,29 @@
                 <form class="space-y-3" on:submit|preventDefault={submitAddAccount}>
                     <input class="border border-gray-300 rounded px-3 py-2 w-full" type="text" placeholder="Account name" bind:value={accName} />
                     <div class="grid grid-cols-2 gap-3">
-                        <select class="border border-gray-300 rounded px-3 py-2" bind:value={accType}>
+                        <select class="border border-gray-300 rounded px-3 py-2 text-gray-400" bind:value={accType}>
+                            <option value="" disabled hidden>Type</option>
                             <option value="Checking">Checking</option>
                             <option value="Savings">Savings</option>
                             <option value="Credit Card">Credit Card</option>
                             <option value="Cash">Cash</option>
                             <option value="Investment">Investment</option>
-                            <option value="Other">Other</option>
+                            <option value="Custom">Custom</option>
                         </select>
-                        <select class="border border-gray-300 rounded px-3 py-2" bind:value={accStash}>
+                        {#if accType === 'Custom'}
+                            <input class="border border-gray-300 rounded px-3 py-2 col-span-2" placeholder="Enter custom type" bind:value={customType} />
+                        {/if}
+                        <select class="border border-gray-300 rounded px-3 py-2 text-gray-400" bind:value={accStash}>
+                            <option value="" disabled hidden>Stash</option>
                             <option value="Bank">Bank</option>
                             <option value="Cash">Cash</option>
                             <option value="Crypto Wallet">Crypto Wallet</option>
                             <option value="Investment">Investment</option>
+                            <option value="Custom">Custom</option>
                         </select>
+                        {#if accStash === 'Custom'}
+                            <input class="border border-gray-300 rounded px-3 py-2 col-span-2" placeholder="Enter custom stash" bind:value={customStash} />
+                        {/if}
                     </div>
                     <input class="border border-gray-300 rounded px-3 py-2 w-full" type="number" min="0" step="0.01" placeholder="Starting balance" bind:value={accBalanceStr} />
                     <div class="flex gap-3 justify-end pt-2">
