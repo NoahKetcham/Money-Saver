@@ -1,0 +1,6 @@
+database:
+  server: "Noah_ROG\\SQLEXPRESS"   # .\SQLEXPRESS or host,port
+  user: ""                         # blank → Windows auth
+  password: ""                     # blank → Windows auth
+  mm_name: "Money-Saver"
+  driver: "ODBC Driver 17 for SQL Server"  # optional, default shown
