@@ -1,5 +1,5 @@
 import { derived, writable, get } from 'svelte/store';
-import { fetchAccounts, createAccount as apiCreateAccount, deleteAccount as apiDeleteAccount } from '$lib/api';
+import { fetchAccounts, createAccount as apiCreateAccount, deleteAccount as apiDeleteAccount, updateAccount as apiUpdateAccount } from '$lib/api';
 import { auth } from '$lib/stores/auth';
 
 export type Account = {
@@ -10,6 +10,7 @@ export type Account = {
 	balance: number;
 	goalAmount?: number; // optional target amount
 	goalDate?: string; // ISO date
+	goalFrequency?: 'daily' | 'weekly' | 'monthly';
 	lastTxDate?: string;
 };
 
@@ -29,6 +30,7 @@ export async function loadAccounts() {
 				stashType: a.stash_type,
 				goalAmount: a.goal_amount,
 				goalDate: a.goal_date,
+				goalFrequency: a.goal_frequency,
 				lastTxDate: a.last_tx_date
 			}))
 		);
@@ -50,7 +52,7 @@ export async function createAccount(input: Omit<Account, 'goalAmount'|'goalDate'
 	const created = await apiCreateAccount(payload);
 	accounts.update((list) => [
 		...list,
-		{ id: created.id, name: created.name, type: created.type, balance: created.balance, goalAmount: created.goal_amount, goalDate: created.goal_date, stashType: created.stash_type }
+		{ id: created.id, name: created.name, type: created.type, balance: created.balance, goalAmount: created.goal_amount, goalDate: created.goal_date, goalFrequency: created.goal_frequency, stashType: created.stash_type }
 	]);
 }
 
@@ -74,10 +76,22 @@ export function removeAccount(id: string) {
 	accounts.update((list) => list.filter((a) => a.id !== id));
 }
 
-export function setAccountGoal(id: string, goalAmount?: number, goalDate?: string) {
-	accounts.update((list) =>
-		list.map((a) => (a.id === id ? { ...a, goalAmount, goalDate } : a))
-	);
+export async function setAccountGoal(
+    id: string,
+    goalAmount: number,
+    goalDate: string,
+    goalFrequency: 'daily' | 'weekly' | 'monthly'
+) {
+    await apiUpdateAccount(id, {
+        goal_amount: goalAmount,
+        goal_date: goalDate,
+        goal_frequency: goalFrequency
+    } as any);
+    accounts.update((list) =>
+        list.map((a) =>
+            a.id === id ? { ...a, goalAmount, goalDate, goalFrequency } : a
+        )
+    );
 }
 
 

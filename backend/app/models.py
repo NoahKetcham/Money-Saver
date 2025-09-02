@@ -17,6 +17,7 @@ class Account(Base):
     stash_type = Column(String, nullable=False, default="Bank")
     goal_amount = Column(Numeric(12, 2), nullable=True)
     goal_date = Column(Date, nullable=True)
+    goal_frequency = Column(String, nullable=True)  # daily, weekly, monthly
     last_tx_date = Column(DateTime, nullable=True)
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
 

@@ -33,6 +33,7 @@ export async function login(email: string, password: string) {
     const form = new URLSearchParams({ username: email, password });
     const res = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: form
     });
     if (!res.ok) throw new Error(await res.text());

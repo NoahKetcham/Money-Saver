@@ -68,3 +68,10 @@ BEGIN
     ALTER TABLE dbo.transactions ADD CONSTRAINT FK_transactions_user FOREIGN KEY (user_id) REFERENCES dbo.users(id);
 END;
 GO
+
+-- Add goal_frequency column
+IF COL_LENGTH('dbo.accounts','goal_frequency') IS NULL
+BEGIN
+    ALTER TABLE dbo.accounts ADD goal_frequency NVARCHAR(10) NULL;
+END;
+GO

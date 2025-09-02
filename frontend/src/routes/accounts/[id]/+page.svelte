@@ -21,20 +21,27 @@
     // goal state
     let goalAmountStr = '';
     let goalDateStr = '';
+    let frequency: 'daily' | 'weekly' | 'monthly' = 'monthly';
+    let editingGoal = true;
+
+    $: accountId = $page.params.id as string;
+    $: account = $accounts.find((a) => a.id === accountId);
+    $: if (account) {
+        frequency = account.goalFrequency ?? frequency;
+        editingGoal = !(account.goalAmount && account.goalDate);
+    }
 
     $: currentBalance = account ? account.balance : 0;
     $: goalAmount = goalAmountStr ? parseFloat(goalAmountStr) : (account?.goalAmount ?? undefined);
     $: goalDate = goalDateStr ? goalDateStr : (account?.goalDate ?? undefined);
 
     function saveGoal() {
-        if (!account) return;
-        const amount = goalAmount !== undefined && !Number.isNaN(goalAmount) ? goalAmount : undefined;
-        const date = goalDate ? goalDate : undefined;
-        setAccountGoal(account.id, amount, date);
+        if (!account || goalAmount === undefined || !goalDate) return;
+        setAccountGoal(account.id, goalAmount, goalDate, frequency);
+        editingGoal = false;
     }
 
     // savings calculator
-    let frequency: 'daily' | 'weekly' | 'monthly' = 'monthly';
     $: perPeriod = computePerPeriod(currentBalance, goalAmount, goalDate, frequency);
 
     function computePerPeriod(current: number, target?: number, dateISO?: string, freq: 'daily'|'weekly'|'monthly' = 'monthly') {
@@ -73,7 +80,7 @@
 
     <section class="card">
         <header class="card-header section-accent flex items-center justify-between">
-            <h2 class="text-sm font-semibold tracking-wide uppercase text-slate-700">Overview</h2>
+            <h2 class="text-sm font-semibold tracking-wide uppercase text-slate-700">Goal Calculator</h2>
             <div class="flex items-center gap-3">
                 {#if account}
                     <p class="text-sm text-slate-600">Balance: <span class="font-semibold brand-text">{formatCurrency(account.balance)}</span></p>
@@ -86,29 +93,29 @@
                 <p class="text-slate-500">Account not found.</p>
             {:else}
                 <p class="subtitle">Type: {account.type}</p>
-                <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <input class="border border-gray-300 rounded px-3 py-2" type="number" min="0" step="0.01" placeholder="Goal amount" bind:value={goalAmountStr} />
-                    <input class="border border-gray-300 rounded px-3 py-2" type="date" placeholder="Target date" bind:value={goalDateStr} />
-                    <button class="btn-primary" on:click={saveGoal} type="button">Save goal</button>
-                </div>
-                {#if account.goalAmount && account.goalDate}
-                    <div class="mt-3 text-sm text-slate-600">
-                        <p>Goal: <span class="font-semibold">{formatCurrency(account.goalAmount)}</span> by {new Date(account.goalDate).toLocaleDateString()}</p>
-                        <div class="mt-2 flex items-center gap-2">
-                            <label>Plan:</label>
-                            <select class="border border-gray-300 rounded px-2 py-1" bind:value={frequency}>
-                                <option value="daily">Daily</option>
-                                <option value="weekly">Weekly</option>
-                                <option value="monthly">Monthly</option>
-                            </select>
-                            {#if perPeriod !== undefined}
-                                <span class="brand-text font-semibold">{formatCurrency(perPeriod)}</span>
-                                <span>per {frequency}</span>
-                            {:else}
-                                <span class="text-slate-400">Set a valid goal and date to see a plan</span>
-                            {/if}
-                        </div>
+                {#if editingGoal}
+                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-4 gap-3">
+                        <input class="border border-gray-300 rounded px-3 py-2" type="number" min="0" step="0.01" placeholder="Goal amount" bind:value={goalAmountStr} />
+                        <input class="border border-gray-300 rounded px-3 py-2" type="date" placeholder="Target date" bind:value={goalDateStr} />
+                        <select class="border border-gray-300 rounded px-3 py-2" bind:value={frequency}>
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                        </select>
+                        <button class="btn-primary" on:click={saveGoal} type="button">Save</button>
                     </div>
+                {:else}
+                    {#if account.goalAmount && account.goalDate && account.goalFrequency}
+                        <div class="mt-4 flex items-center justify-between">
+                            <p class="text-slate-700 text-sm">Need <span class="font-semibold brand-text">{formatCurrency(perPeriod ?? 0)}</span> per {account.goalFrequency} to save ({formatCurrency(account.goalAmount)}) by {new Date(account.goalDate).toLocaleDateString()}</p>
+                            <button class="text-slate-400 hover:text-slate-600" on:click={() => {
+                                editingGoal = true;
+                                goalAmountStr = account.goalAmount?.toString() ?? '';
+                                goalDateStr = account.goalDate ?? '';
+                                frequency = account.goalFrequency ?? 'monthly';
+                            }}>Edit</button>
+                        </div>
+                    {/if}
                 {/if}
             {/if}
         </div>

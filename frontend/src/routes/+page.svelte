@@ -6,6 +6,19 @@
         return value.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
     }
 
+    function goalLine(a) {
+        const now=new Date();
+        const end=new Date(a.goalDate);
+        const ms=end.getTime()-now.getTime();
+        const days=Math.max(0,ms/86400000);
+        const remaining=Math.max(0,a.goalAmount-a.balance);
+        let per=0;
+        if(a.goalFrequency==='daily') per=remaining/Math.ceil(days||1);
+        else if(a.goalFrequency==='weekly') per=remaining/Math.ceil(days/7||1);
+        else per=remaining/Math.ceil(days/30||1);
+        return `${per.toLocaleString(undefined,{style:'currency',currency:'USD'})}/${a.goalFrequency} to save (${a.goalAmount.toLocaleString(undefined,{style:'currency',currency:'USD'})}) by ${end.toLocaleDateString()}`;
+    }
+
     // Recent transactions are rendered inline in the template
 
     // quick transaction form state
@@ -81,6 +94,9 @@
                                         <span class="badge-soft">{a.stashType}</span>
                                     </p>
                                     <p class="text-xs text-slate-400 mt-0.5">Last txn: {a.lastTxDate ? new Date(a.lastTxDate).toLocaleDateString() : '—'}</p>
+                                    {#if a.goalAmount && a.goalDate && a.goalFrequency}
+                                        <p class="text-xs text-slate-500 mt-0.5">{goalLine(a)}</p>
+                                    {/if}
                                 </div>
                             </a>
                             <div class="flex items-center gap-2">

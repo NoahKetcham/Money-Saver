@@ -10,6 +10,7 @@ class AccountBase(BaseModel):
     stash_type: Literal['Cash','Bank','Crypto Wallet','Investment'] = 'Bank'
     goal_amount: Optional[float] = None
     goal_date: Optional[date] = None
+    goal_frequency: Optional[Literal['daily','weekly','monthly']] = None
 
 
 class AccountCreate(AccountBase):
@@ -23,11 +24,13 @@ class AccountUpdate(BaseModel):
     goal_amount: Optional[float] = None
     goal_date: Optional[date] = None
     stash_type: Optional[str] = None
+    goal_frequency: Optional[str] = None
 
 
 class Account(AccountBase):
     id: str
     last_tx_date: Optional[datetime] = None
+    goal_frequency: Optional[str] = None
 
     class Config:
         from_attributes = True

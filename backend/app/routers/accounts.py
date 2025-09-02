@@ -47,6 +47,7 @@ def create_account(
         balance=payload.balance,
         goal_amount=payload.goal_amount,
         goal_date=payload.goal_date,
+        goal_frequency=payload.goal_frequency,
         user_id=current_user.id,
     )
     db.add(account)

@@ -29,6 +29,7 @@ export type Account = {
 	balance: number;
 	goal_amount?: number;
 	goal_date?: string;
+	goal_frequency?: 'daily' | 'weekly' | 'monthly';
 	last_tx_date?: string;
 };
 
@@ -49,6 +50,10 @@ export async function createAccount(acc: {
 	goal_date?: string;
 }): Promise<Account> {
 	return request<Account>('/accounts/', { method: 'POST', body: JSON.stringify(acc) });
+}
+
+export async function updateAccount(id: string, acc: Partial<Account>): Promise<Account> {
+	return request<Account>(`/accounts/${id}`, { method: 'PATCH', body: JSON.stringify(acc) });
 }
 
 export async function deleteAccount(id: string): Promise<void> {
