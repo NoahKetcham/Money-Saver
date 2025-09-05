@@ -1,13 +1,14 @@
 <script lang="ts">
-    import { accounts, totalAccountBalance, createAccount as createAccountStore } from '$lib/stores/accounts';
+    import { accounts, totalAccountBalance, createAccount as createAccountStore, type Account } from '$lib/stores/accounts';
     import { transactions, addWithdrawal, addDeposit, addTransfer } from '$lib/stores/transactions';
 
     function formatCurrency(value: number): string {
         return value.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
     }
 
-    function goalLine(a) {
+    function goalLine(a: Account) {
         const now=new Date();
+        if(!a.goalDate || a.goalAmount===undefined) return '';
         const end=new Date(a.goalDate);
         const ms=end.getTime()-now.getTime();
         const days=Math.max(0,ms/86400000);
@@ -19,7 +20,7 @@
         return `${per.toLocaleString(undefined,{style:'currency',currency:'USD'})}/${a.goalFrequency} to save (${a.goalAmount.toLocaleString(undefined,{style:'currency',currency:'USD'})}) by ${end.toLocaleDateString()}`;
     }
 
-    function catchUpLine(a) {
+    function catchUpLine(a: Account) {
         if(!a.goalFrequency) return '';
         if(!a.lastTxDate) return 'On Track!';
         const last=new Date(a.lastTxDate);
@@ -33,13 +34,14 @@
             missed=((now.getFullYear()-last.getFullYear())*12+(now.getMonth()-last.getMonth()))-1;
         }
         if(missed<=0) return 'On Track!';
-        const per=parseFloat(goalLinePer(a));
+        const per = goalLinePer(a);
         const amt=per*missed;
         return `Catch-up: ${amt.toLocaleString(undefined,{style:'currency',currency:'USD'})} needed to get back on track`;
     }
 
-    function goalLinePer(a){
+    function goalLinePer(a: Account){
         const now=new Date();
+        if(!a.goalDate || a.goalAmount===undefined) return 0;
         const end=new Date(a.goalDate);
         const days=Math.max(0,(end.getTime()-now.getTime())/86400000);
         const remaining=Math.max(0,a.goalAmount-a.balance);
@@ -94,7 +96,7 @@
         let finalStash = accStash === 'Custom' ? customStash.trim() : accStash;
         if (!accName.trim() || Number.isNaN(balance) || !finalType || !finalStash) return;
         const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
-        createAccountStore({ id, name: accName.trim(), type: finalType, balance, stashType: finalStash });
+        createAccountStore({ id, name: accName.trim(), type: finalType, balance, stashType: finalStash, status: 'active' } as any);
         accName = '';
         accBalanceStr = '';
         accType = '';
@@ -142,6 +144,19 @@
                             <div class="flex items-center gap-2">
                                 <div class="font-semibold {a.balance < 0 ? 'text-red-600' : 'text-green-700'}">{formatCurrency(a.balance)}</div>
                             </div>
+                            <!-- Reorder controls -->
+                            <div class="flex flex-col ml-2 text-slate-400">
+                                <button class="hover:text-slate-600 leading-none" title="Move up" on:click={() => import('$lib/stores/accounts').then(m=>m.moveAccount(a.id,-1))}>▲</button>
+                                <button class="hover:text-slate-600 leading-none" title="Move down" on:click={() => import('$lib/stores/accounts').then(m=>m.moveAccount(a.id,1))}>▼</button>
+                            </div>
+                            <button class="text-slate-400 hover:text-slate-600 ml-3" title="Close Account" on:click={async () => {
+                                const reason = prompt(`Why are you closing '${a.name}'?`);
+                                if (reason !== null && reason.trim()) {
+                                    const m = await import('$lib/stores/accounts');
+                                    m.closeAccount(a.id, reason.trim());
+                                }
+                            }}>🛑 Close</button>
+
                             <button class="text-slate-400 hover:text-slate-600 ml-3" title="Delete" on:click={() => {
                                 if (confirm(`Delete account '${a.name}'? All its transactions will also be removed.`)) {
                                     import('$lib/stores/accounts').then(m => m.deleteAccount(a.id));

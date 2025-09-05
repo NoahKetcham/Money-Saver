@@ -2,7 +2,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import '../app.css';
 	import { onMount, onDestroy } from 'svelte';
-	import { loadAccounts } from '$lib/stores/accounts';
+	import { loadAccounts, loadClosedAccounts } from '$lib/stores/accounts';
 	import { loadTransactions } from '$lib/stores/transactions';
 	import { auth, logout, fetchCurrentUser } from '$lib/stores/auth';
 	import { get } from 'svelte/store';
@@ -19,6 +19,7 @@
 			if (v.token) {
 				loadAccounts();
 				loadTransactions();
+				loadClosedAccounts();
 			}
 		});
 	});
@@ -50,6 +51,7 @@
 				<a class="text-white font-semibold hover:underline" href="/expenses">Expenses</a>
 				<a class="text-white font-semibold hover:underline" href="/budgets">Budgets</a>
 				<a class="text-white font-semibold hover:underline" href="/reports">Reports</a>
+				<a class="text-white font-semibold hover:underline" href="/closed">Closed Accounts</a>
 			</div>
 			<div class="flex items-center gap-4">
 				<span class="text-sm">Hello, {$auth.user.first_name}</span>

@@ -1,0 +1,24 @@
+
+
+
+# To run frontend
+
+### Initial Start:
+    - cd frontend
+    - npm install
+    - npm run dev
+
+### Working build:
+    - cd frontend
+    - npm run dev
+
+# To run backend
+
+### Initial:
+    - cd backend
+    - pip install -r requirements.txt
+    - uvicorn app.main:app --reload --port 8000
+
+### Working build:
+    - cd backend
+    - uvicorn app.main:app --reload --port 8000

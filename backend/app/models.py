@@ -14,6 +14,8 @@ class Account(Base):
     name = Column(String, nullable=False)
     type = Column(String, nullable=False)
     balance = Column(Numeric(12, 2), nullable=False, default=0)
+    status = Column(String, nullable=False, default="active", index=True)  # active | closed
+    closed_reason = Column(String, nullable=True)
     stash_type = Column(String, nullable=False, default="Bank")
     goal_amount = Column(Numeric(12, 2), nullable=True)
     goal_date = Column(Date, nullable=True)

@@ -37,6 +37,10 @@ export async function fetchAccounts(): Promise<Account[]> {
 	return request<Account[]>('/accounts/');
 }
 
+export async function fetchClosedAccounts(): Promise<Account[]> {
+	return request<Account[]>('/accounts/closed');
+}
+
 export async function fetchAccount(id: string): Promise<Account> {
 	return request<Account>(`/accounts/${id}`);
 }
@@ -54,6 +58,10 @@ export async function createAccount(acc: {
 
 export async function updateAccount(id: string, acc: Partial<Account>): Promise<Account> {
 	return request<Account>(`/accounts/${id}`, { method: 'PATCH', body: JSON.stringify(acc) });
+}
+
+export async function closeAccount(id: string, reason: string): Promise<Account> {
+	return request<Account>(`/accounts/${id}/close`, { method: 'PATCH', body: JSON.stringify({ reason }) });
 }
 
 export async function deleteAccount(id: string): Promise<void> {

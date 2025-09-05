@@ -1,13 +1,14 @@
 import { derived, writable, get } from 'svelte/store';
-import { fetchAccounts, createAccount as apiCreateAccount, deleteAccount as apiDeleteAccount, updateAccount as apiUpdateAccount } from '$lib/api';
+import { fetchAccounts, fetchClosedAccounts, createAccount as apiCreateAccount, deleteAccount as apiDeleteAccount, updateAccount as apiUpdateAccount, closeAccount as apiCloseAccount } from '$lib/api';
 import { auth } from '$lib/stores/auth';
 
 export type Account = {
 	id: string;
 	name: string;
-	type: 'Checking' | 'Savings' | 'Credit Card' | 'Cash' | 'Investment' | 'Other';
-	stashType: 'Cash' | 'Bank' | 'Crypto Wallet' | 'Investment';
+	type: string;
+	stashType: string;
 	balance: number;
+	status: 'active' | 'closed';
 	goalAmount?: number; // optional target amount
 	goalDate?: string; // ISO date
 	goalFrequency?: 'daily' | 'weekly' | 'monthly';
@@ -15,6 +16,7 @@ export type Account = {
 };
 
 export const accounts = writable<Account[]>([]);
+export const closedAccounts = writable<Account[]>([]);
 
 export async function loadAccounts() {
 	if (!get(auth).token) return;
@@ -31,7 +33,8 @@ export async function loadAccounts() {
 				goalAmount: a.goal_amount,
 				goalDate: a.goal_date,
 				goalFrequency: a.goal_frequency,
-				lastTxDate: a.last_tx_date
+				lastTxDate: a.last_tx_date,
+				status: a.status
 			}))
 		);
 	} catch (e) {
@@ -61,6 +64,16 @@ export async function deleteAccount(id: string) {
 	accounts.update((list) => list.filter((a) => a.id !== id));
 }
 
+export async function closeAccount(id: string, reason: string) {
+    const updated = await apiCloseAccount(id, reason);
+    // Remove from active list and add to closed
+    accounts.update((list) => list.filter((a) => a.id !== id));
+    closedAccounts.update((list) => [
+        ...list,
+        { ...updated, stashType: updated.stash_type, goalAmount: updated.goal_amount, goalDate: updated.goal_date, goalFrequency: updated.goal_frequency, lastTxDate: updated.last_tx_date, status: updated.status }
+    ]);
+}
+
 export const totalAccountBalance = derived(accounts, ($accounts) =>
 	$accounts.reduce((sum, a) => sum + a.balance, 0)
 );
@@ -74,6 +87,20 @@ export function addAccount(account: Omit<Account, 'id'>) {
 
 export function removeAccount(id: string) {
 	accounts.update((list) => list.filter((a) => a.id !== id));
+}
+
+// Move account up (delta = -1) or down (delta = +1) within the list
+export function moveAccount(id: string, delta: number) {
+    accounts.update((list) => {
+        const idx = list.findIndex((a) => a.id === id);
+        if (idx === -1) return list;
+        const newIdx = idx + delta;
+        if (newIdx < 0 || newIdx >= list.length) return list; // out of bounds
+        const newList = [...list];
+        const [item] = newList.splice(idx, 1);
+        newList.splice(newIdx, 0, item);
+        return newList;
+    });
 }
 
 export async function setAccountGoal(
@@ -92,6 +119,29 @@ export async function setAccountGoal(
             a.id === id ? { ...a, goalAmount, goalDate, goalFrequency } : a
         )
     );
+}
+
+export async function loadClosedAccounts() {
+    if (!get(auth).token) return;
+    try {
+        const data = await fetchClosedAccounts();
+        closedAccounts.set(
+            data.map((a: any) => ({
+                id: a.id,
+                name: a.name,
+                type: a.type,
+                balance: a.balance,
+                stashType: a.stash_type,
+                goalAmount: a.goal_amount,
+                goalDate: a.goal_date,
+                goalFrequency: a.goal_frequency,
+                lastTxDate: a.last_tx_date,
+                status: a.status
+            }))
+        );
+    } catch (e) {
+        console.error('Failed to load closed accounts', e);
+    }
 }
 
 

@@ -8,6 +8,8 @@ BEGIN
         name NVARCHAR(255) NOT NULL,
         type NVARCHAR(50) NOT NULL,
         balance DECIMAL(12,2) NOT NULL CONSTRAINT DF_accounts_balance DEFAULT (0),
+        status NVARCHAR(10) NOT NULL CONSTRAINT DF_accounts_status DEFAULT ('active'),
+        closed_reason NVARCHAR(500) NULL,
         stash_type NVARCHAR(50) NOT NULL CONSTRAINT DF_accounts_stash_type DEFAULT ('Bank'),  -- ← new
         goal_amount DECIMAL(12,2) NULL,
         goal_date DATE NULL,
@@ -73,5 +75,19 @@ GO
 IF COL_LENGTH('dbo.accounts','goal_frequency') IS NULL
 BEGIN
     ALTER TABLE dbo.accounts ADD goal_frequency NVARCHAR(10) NULL;
+END;
+GO
+
+-- Add status column
+IF COL_LENGTH('dbo.accounts','status') IS NULL
+BEGIN
+    ALTER TABLE dbo.accounts ADD status NVARCHAR(10) NOT NULL CONSTRAINT DF_accounts_status DEFAULT ('active');
+END;
+GO
+
+-- Add closed_reason column
+IF COL_LENGTH('dbo.accounts','closed_reason') IS NULL
+BEGIN
+    ALTER TABLE dbo.accounts ADD closed_reason NVARCHAR(500) NULL;
 END;
 GO

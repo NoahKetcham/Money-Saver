@@ -7,6 +7,7 @@ class AccountBase(BaseModel):
     name: str
     type: str
     balance: float
+    status: str = 'active'
     stash_type: str = 'Bank'
     goal_amount: Optional[float] = None
     goal_date: Optional[date] = None
@@ -21,6 +22,7 @@ class AccountUpdate(BaseModel):
     name: Optional[str] = None
     type: Optional[str] = None
     balance: Optional[float] = None
+    status: Optional[str] = None
     goal_amount: Optional[float] = None
     goal_date: Optional[date] = None
     stash_type: Optional[str] = None
@@ -30,6 +32,7 @@ class AccountUpdate(BaseModel):
 class Account(AccountBase):
     id: str
     last_tx_date: Optional[datetime] = None
+    status: str
     goal_frequency: Optional[str] = None
 
     class Config:
@@ -92,5 +95,10 @@ class UserOut(UserBase):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+# Account close payload
+class AccountClose(BaseModel):
+    reason: str
 
 

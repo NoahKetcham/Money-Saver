@@ -18,7 +18,24 @@ def list_accounts(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return db.query(models.Account).filter(models.Account.user_id == current_user.id).all()
+    return (
+        db.query(models.Account)
+        .filter(models.Account.user_id == current_user.id, models.Account.status == "active")
+        .all()
+    )
+
+
+# New endpoint to fetch closed accounts
+@router.get('/closed', response_model=List[schemas.Account])
+def list_closed_accounts(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return (
+        db.query(models.Account)
+        .filter(models.Account.user_id == current_user.id, models.Account.status == "closed")
+        .all()
+    )
 
 
 @router.get('/{account_id}', response_model=schemas.Account)
@@ -93,5 +110,27 @@ def delete_account(account_id: str, db: Session = Depends(get_db), current_user:
     db.delete(account)
     db.commit()
     return None
+
+
+# Endpoint to mark account as closed
+@router.patch('/{account_id}/close', response_model=schemas.Account)
+def close_account(
+    account_id: str,
+    payload: schemas.AccountClose,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    account = db.query(models.Account).get(account_id)
+    if not account:
+        raise HTTPException(status_code=404, detail='Account not found')
+    if account.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    if account.status == "closed":
+        raise HTTPException(status_code=400, detail='Account already closed')
+    account.status = "closed"
+    account.closed_reason = payload.reason
+    db.commit()
+    db.refresh(account)
+    return account
 
 
