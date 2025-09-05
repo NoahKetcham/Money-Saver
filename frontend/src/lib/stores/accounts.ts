@@ -1,5 +1,5 @@
 import { derived, writable, get } from 'svelte/store';
-import { fetchAccounts, fetchClosedAccounts, createAccount as apiCreateAccount, deleteAccount as apiDeleteAccount, updateAccount as apiUpdateAccount, closeAccount as apiCloseAccount } from '$lib/api';
+import { fetchAccounts, fetchClosedAccounts, createAccount as apiCreateAccount, deleteAccount as apiDeleteAccount, updateAccount as apiUpdateAccount, closeAccount as apiCloseAccount, restoreAccount as apiRestoreAccount } from '$lib/api';
 import { auth } from '$lib/stores/auth';
 
 export type Account = {
@@ -9,6 +9,7 @@ export type Account = {
 	stashType: string;
 	balance: number;
 	status: 'active' | 'closed';
+	closed_reason?: string;
 	goalAmount?: number; // optional target amount
 	goalDate?: string; // ISO date
 	goalFrequency?: 'daily' | 'weekly' | 'monthly';
@@ -70,8 +71,29 @@ export async function closeAccount(id: string, reason: string) {
     accounts.update((list) => list.filter((a) => a.id !== id));
     closedAccounts.update((list) => [
         ...list,
-        { ...updated, stashType: updated.stash_type, goalAmount: updated.goal_amount, goalDate: updated.goal_date, goalFrequency: updated.goal_frequency, lastTxDate: updated.last_tx_date, status: updated.status }
+        { ...updated, stashType: updated.stash_type, goalAmount: updated.goal_amount, goalDate: updated.goal_date, goalFrequency: updated.goal_frequency, lastTxDate: updated.last_tx_date, status: updated.status, closed_reason: updated.closed_reason }
     ]);
+}
+
+export async function restoreAccount(id: string) {
+    const updated = await apiRestoreAccount(id);
+    // remove from closed and add back to active
+    closedAccounts.update(list=>list.filter(a=>a.id!==id));
+    accounts.update(list=>[
+        ...list,
+        { ...updated, stashType: updated.stash_type, goalAmount: updated.goal_amount, goalDate: updated.goal_date, goalFrequency: updated.goal_frequency, lastTxDate: updated.last_tx_date, status: updated.status, closed_reason: updated.closed_reason }
+    ]);
+}
+
+export async function updateAccountStore(id: string, changes: Partial<Account>) {
+    const payload: any = { ...changes };
+    // map camelCase back to snake
+    if ('stashType' in payload) {
+        payload.stash_type = payload.stashType;
+        delete payload.stashType;
+    }
+    const updated = await apiUpdateAccount(id, payload);
+    accounts.update((list) => list.map((a) => a.id === id ? { ...a, ...changes } : a));
 }
 
 export const totalAccountBalance = derived(accounts, ($accounts) =>
@@ -136,7 +158,8 @@ export async function loadClosedAccounts() {
                 goalDate: a.goal_date,
                 goalFrequency: a.goal_frequency,
                 lastTxDate: a.last_tx_date,
-                status: a.status
+                status: a.status,
+                closed_reason: a.closed_reason
             }))
         );
     } catch (e) {

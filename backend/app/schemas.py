@@ -33,6 +33,7 @@ class Account(AccountBase):
     id: str
     last_tx_date: Optional[datetime] = None
     status: str
+    closed_reason: Optional[str] = None
     goal_frequency: Optional[str] = None
 
     class Config:

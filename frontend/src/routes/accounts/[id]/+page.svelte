@@ -30,6 +30,26 @@ $: if (account) {
     let frequency: 'daily' | 'weekly' | 'monthly' = 'monthly';
     let editingGoal = true;
 
+    // edit modal state
+    let editingDetails = false;
+    let editName = '';
+    let editType = '';
+    let editStash = '';
+    let editBalanceStr = '';
+
+    async function saveDetails() {
+        if(!account) return;
+        const balanceNum = parseFloat(editBalanceStr);
+        if(Number.isNaN(balanceNum)) return;
+        await import('$lib/stores/accounts').then(m=>m.updateAccountStore(account.id,{
+            name: editName,
+            type: editType,
+            stashType: editStash,
+            balance: balanceNum
+        }));
+        editingDetails=false;
+    }
+
     function perPeriodCalc(a) {
         if(!a.goalAmount||!a.goalDate) return 0;
         const now=new Date();
@@ -101,7 +121,18 @@ $: if (account) {
 </script>
 
 <div class="space-y-6">
-    <h1 class="title-xl">{account ? account.name : 'Account'}</h1>
+    <div class="flex items-center justify-between">
+        <h1 class="title-xl">{account ? account.name : 'Account'}</h1>
+        {#if account}
+            <button class="text-slate-400 hover:text-slate-600" on:click={() => {
+                editingDetails = true;
+                editName = account.name;
+                editType = account.type;
+                editStash = account.stashType;
+                editBalanceStr = account.balance.toString();
+            }}>Edit</button>
+        {/if}
+    </div>
 
     <section class="card">
         <header class="card-header section-accent flex items-center justify-between">
@@ -150,6 +181,24 @@ $: if (account) {
             {/if}
         </div>
     </section>
+
+    {#if editingDetails}
+        <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" on:click={() => editingDetails=false}>
+            <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6" on:click|stopPropagation>
+                <h3 class="text-lg font-semibold mb-4">Edit Account</h3>
+                <form class="space-y-3" on:submit|preventDefault={saveDetails}>
+                    <input class="border border-gray-300 rounded px-3 py-2 w-full" type="text" bind:value={editName} placeholder="Name" />
+                    <input class="border border-gray-300 rounded px-3 py-2 w-full" type="text" bind:value={editType} placeholder="Type" />
+                    <input class="border border-gray-300 rounded px-3 py-2 w-full" type="text" bind:value={editStash} placeholder="Stash Type" />
+                    <input class="border border-gray-300 rounded px-3 py-2 w-full" type="number" step="0.01" bind:value={editBalanceStr} placeholder="Balance" />
+                    <div class="flex gap-3 justify-end pt-2">
+                        <button type="button" class="text-slate-500" on:click={() => editingDetails=false}>Cancel</button>
+                        <button class="btn-primary" type="submit">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {/if}
 
     <section class="card">
         <header class="card-header section-accent">

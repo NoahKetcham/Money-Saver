@@ -64,6 +64,10 @@ export async function closeAccount(id: string, reason: string): Promise<Account>
 	return request<Account>(`/accounts/${id}/close`, { method: 'PATCH', body: JSON.stringify({ reason }) });
 }
 
+export async function restoreAccount(id: string): Promise<Account> {
+    return request<Account>(`/accounts/${id}/restore`, { method: 'PATCH' });
+}
+
 export async function deleteAccount(id: string): Promise<void> {
 	await request<void>(`/accounts/${id}`, { method: 'DELETE' });
 }

@@ -21,7 +21,9 @@
             <tr>
                 <th class="p-2">Name</th>
                 <th class="p-2">Type</th>
+                <th class="p-2">Reason</th>
                 <th class="p-2 text-right">Balance</th>
+                <th class="p-2"></th>
             </tr>
         </thead>
         <tbody>
@@ -29,7 +31,9 @@
                 <tr class="border-t">
                     <td class="p-2">{acc.name}</td>
                     <td class="p-2">{acc.type}</td>
+                    <td class="p-2">{acc.closed_reason}</td>
                     <td class="p-2 text-right">${acc.balance.toFixed(2)}</td>
+                    <td class="p-2 text-right"><button class="text-blue-600 underline" on:click={() => import('$lib/stores/accounts').then(m=>m.restoreAccount(acc.id))}>Restore</button></td>
                 </tr>
             {/each}
         </tbody>

@@ -133,4 +133,24 @@ def close_account(
     db.refresh(account)
     return account
 
+# Restore account endpoint
+@router.patch('/{account_id}/restore', response_model=schemas.Account)
+def restore_account(
+    account_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    account = db.query(models.Account).get(account_id)
+    if not account:
+        raise HTTPException(status_code=404, detail='Account not found')
+    if account.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail='Forbidden')
+    if account.status == 'active':
+        raise HTTPException(status_code=400, detail='Account already active')
+    account.status = 'active'
+    account.closed_reason = None
+    db.commit()
+    db.refresh(account)
+    return account
+
 
